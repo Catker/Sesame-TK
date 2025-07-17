@@ -280,24 +280,42 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                             @Override
                             protected void afterHookedMethod(MethodHookParam param) {
                                 Service appService = (Service) param.thisObject;
-                                if (!General.CURRENT_USING_SERVICE.equals(appService.getClass().getCanonicalName())) {
+                                String serviceName = appService.getClass().getCanonicalName();
+                                Log.runtime(TAG, "Service onCreate detected: " + serviceName);
+                                
+                                if (!General.CURRENT_USING_SERVICE.equals(serviceName)) {
+                                    Log.runtime(TAG, "Service mismatch - Expected: " + General.CURRENT_USING_SERVICE + ", Got: " + serviceName);
                                     return;
                                 }
-                                Log.runtime(TAG, "Service onCreate");
+                                Log.runtime(TAG, "✅ Service matched! Starting initialization...");
                                 appContext = appService.getApplicationContext();
+                                Log.runtime(TAG, "📱 AppContext obtained: " + (appContext != null ? "Success" : "Failed"));
+                                
                                 boolean isok = Detector.INSTANCE.isLegitimateEnvironment(appContext);
+                                Log.runtime(TAG, "🔍 Environment check result: " + isok + " (true means ILLEGITIMATE)");
                                 if (isok) {
+                                    Log.runtime(TAG, "❌ Environment check FAILED - calling dangerous() and returning");
                                     Detector.INSTANCE.dangerous(appContext);
                                     return;
                                 }
+                                Log.runtime(TAG, "✅ Environment check PASSED - continuing initialization...");
+                                
                                 String packageName = loadPackageParam.packageName;
                                 String apkPath = loadPackageParam.appInfo.sourceDir;
+                                Log.runtime(TAG, "📦 Package: " + packageName + ", APK: " + apkPath);
+                                
                                 try (DexKitBridge bridge = DexKitBridge.create(apkPath)) {
-                                    // Other use cases
-                                    Log.runtime(TAG, "hook dexkit successfully");
+                                    Log.runtime(TAG, "🔧 DexKitBridge created successfully");
+                                } catch (Exception e) {
+                                    Log.runtime(TAG, "❌ DexKitBridge creation failed: " + e.getMessage());
+                                    Log.printStackTrace(TAG, e);
                                 }
+                                
                                 service = appService;
+                                Log.runtime(TAG, "🔧 Service assigned");
+                                
                                 mainHandler = new Handler(Looper.getMainLooper());
+                                Log.runtime(TAG, "🔧 MainHandler created: " + (mainHandler != null ? "Success" : "Failed"));
 
                                 mainTask = BaseTask.newInstance("MAIN_TASK", () -> {
                                     try {
@@ -331,10 +349,20 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                                         Log.printStackTrace(TAG, e);
                                     }
                                 });
+                                Log.runtime(TAG, "🔧 MainTask created: " + (mainTask != null ? "Success" : "Failed"));
+                                
                                 registerBroadcastReceiver(appService);
+                                Log.runtime(TAG, "📡 BroadcastReceiver registered");
+                                
                                 dayCalendar = Calendar.getInstance();
+                                Log.runtime(TAG, "📅 DayCalendar initialized");
+                                
+                                Log.runtime(TAG, "🚀 Calling initHandler(true)...");
                                 if (initHandler(true)) {
                                     init = true;
+                                    Log.runtime(TAG, "✅ InitHandler SUCCESS - Module fully initialized!");
+                                } else {
+                                    Log.runtime(TAG, "❌ InitHandler FAILED - Module not initialized");
                                 }
                             }
                         }
