@@ -617,12 +617,38 @@ public class ApplicationHook implements IXposedHookLoadPackage {
      * @param delayMillis 延迟执行的毫秒数
      */
     static void execDelayedHandler(long delayMillis) {
-        mainHandler.postDelayed(
-                () -> mainTask.startTask(true), delayMillis);
         try {
+            if (mainHandler == null) {
+                Log.error(TAG, "mainHandler is null, attempting to initialize...");
+                // 尝试重新初始化 Handler
+                if (Looper.getMainLooper() != null) {
+                    mainHandler = new Handler(Looper.getMainLooper());
+                    Log.runtime(TAG, "mainHandler re-initialized successfully");
+                } else {
+                    Log.error(TAG, "MainLooper is null, cannot create mainHandler");
+                    return;
+                }
+            }
+            
+            if (mainTask == null) {
+                Log.error(TAG, "mainTask is null, skipping execution");
+                return;
+            }
+            
+            mainHandler.postDelayed(
+                    () -> {
+                        try {
+                            mainTask.startTask(true);
+                        } catch (Exception e) {
+                            Log.error(TAG, "Error executing mainTask: " + e.getMessage());
+                            Log.printStackTrace(TAG, e);
+                        }
+                    }, delayMillis);
+            
             Notify.updateNextExecText(System.currentTimeMillis() + delayMillis);
         } catch (Exception e) {
-            Log.printStackTrace(e);
+            Log.error(TAG, "Error in execDelayedHandler: " + e.getMessage());
+            Log.printStackTrace(TAG, e);
         }
     }
 
@@ -792,19 +818,49 @@ public class ApplicationHook implements IXposedHookLoadPackage {
     }
 
     public static void reLogin() {
-        mainHandler.post(
-                () -> {
-                    if (reLoginCount.get() < 5) {
-                        execDelayedHandler(reLoginCount.getAndIncrement() * 5000L);
-                    } else {
-                        execDelayedHandler(Math.max(BaseModel.getCheckInterval().getValue(), 180_000));
-                    }
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setClassName(General.PACKAGE_NAME, General.CURRENT_USING_ACTIVITY);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    offline = true;
-                    appContext.startActivity(intent);
-                });
+        try {
+            if (mainHandler == null) {
+                Log.error(TAG, "mainHandler is null in reLogin, attempting to initialize...");
+                if (Looper.getMainLooper() != null) {
+                    mainHandler = new Handler(Looper.getMainLooper());
+                    Log.runtime(TAG, "mainHandler re-initialized in reLogin");
+                } else {
+                    Log.error(TAG, "MainLooper is null in reLogin, using fallback");
+                    // 直接执行而不使用 Handler
+                    executeReLoginLogic();
+                    return;
+                }
+            }
+            
+            mainHandler.post(() -> executeReLoginLogic());
+        } catch (Exception e) {
+            Log.error(TAG, "Error in reLogin: " + e.getMessage());
+            Log.printStackTrace(TAG, e);
+            // 作为后备方案，直接执行
+            executeReLoginLogic();
+        }
+    }
+    
+    private static void executeReLoginLogic() {
+        try {
+            if (reLoginCount.get() < 5) {
+                execDelayedHandler(reLoginCount.getAndIncrement() * 5000L);
+            } else {
+                execDelayedHandler(Math.max(BaseModel.getCheckInterval().getValue(), 180_000));
+            }
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setClassName(General.PACKAGE_NAME, General.CURRENT_USING_ACTIVITY);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            offline = true;
+            if (appContext != null) {
+                appContext.startActivity(intent);
+            } else {
+                Log.error(TAG, "appContext is null, cannot start activity");
+            }
+        } catch (Exception e) {
+            Log.error(TAG, "Error in executeReLoginLogic: " + e.getMessage());
+            Log.printStackTrace(TAG, e);
+        }
     }
 
     class AlipayBroadcastReceiver extends BroadcastReceiver {

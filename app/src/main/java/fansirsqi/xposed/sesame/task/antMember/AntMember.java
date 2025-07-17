@@ -358,8 +358,15 @@ public class AntMember extends ModelTask {
   private static void joinAndFinishSesameTask(JSONArray taskList) throws JSONException {
     for (int i = 0; i < taskList.length(); i++) {
       JSONObject task = taskList.getJSONObject(i);
-      String taskTemplateId = task.getString("templateId");
-      String taskTitle = task.getString("title");
+      
+      // 安全获取 templateId，如果不存在则跳过该任务
+      String taskTemplateId = task.optString("templateId", "");
+      if (taskTemplateId.isEmpty()) {
+        Log.error(TAG, "Task missing templateId, skipping: " + task.toString());
+        continue;
+      }
+      
+      String taskTitle = task.optString("title", "未知任务");
       int needCompleteNum = task.getInt("needCompleteNum");
       int completedNum = task.optInt("completedNum", 0);
       String s;

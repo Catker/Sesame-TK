@@ -667,7 +667,11 @@ public class AntOcean extends ModelTask {
                 if (!ResChecker.checkRes(TAG,jo)) {
                     Log.record(TAG, "查询任务列表失败：" + jo.getString("resultDesc"));
                 }
-                JSONArray jaTaskList = jo.getJSONArray("antOceanTaskVOList");
+                JSONArray jaTaskList = jo.optJSONArray("antOceanTaskVOList");
+                if (jaTaskList == null) {
+                    Log.error(TAG, "antOceanTaskVOList not found in response: " + jo.toString());
+                    return;
+                }
                 for (int i = 0; i < jaTaskList.length(); i++) {
                     JSONObject task = jaTaskList.getJSONObject(i);
                     JSONObject bizInfo = new JSONObject(task.getString("bizInfo"));
@@ -759,7 +763,11 @@ public class AntOcean extends ModelTask {
                 String taskListResponse = AntOceanRpcCall.PDLqueryTaskList();
                 GlobalThreadPools.sleep(300);
                 JSONObject taskListJson = new JSONObject(taskListResponse);
-                JSONArray antOceanTaskVOList = taskListJson.getJSONArray("antOceanTaskVOList");
+                JSONArray antOceanTaskVOList = taskListJson.optJSONArray("antOceanTaskVOList");
+                if (antOceanTaskVOList == null) {
+                    Log.error(TAG, "PDL antOceanTaskVOList not found in response: " + taskListJson.toString());
+                    return;
+                }
                 for (int i = 0; i < antOceanTaskVOList.length(); i++) {
                     JSONObject task = antOceanTaskVOList.getJSONObject(i);
                     String taskStatus = task.getString("taskStatus");

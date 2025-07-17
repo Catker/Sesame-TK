@@ -67,8 +67,13 @@ data object AntFarmFamily {
         try {
             var enterRes = JSONObject(AntFarmRpcCall.enterFamily());
             if (ResChecker.checkRes(TAG, enterRes)) {
-                groupId = enterRes.getString("groupId")
-                groupName = enterRes.getString("groupName")
+                // 安全获取 groupId，如果不存在则记录错误并返回
+                groupId = enterRes.optString("groupId", "")
+                if (groupId.isEmpty()) {
+                    Log.error(TAG, "Enter family response missing groupId: ${enterRes}")
+                    return
+                }
+                groupName = enterRes.optString("groupName", "未知家庭")
                 var familyAwardNum: Int = enterRes.optInt("familyAwardNum", 0)//奖励数量
                 var familySignTips: Boolean = enterRes.optBoolean("familySignTips", false)//签到
                 var assignFamilyMemberInfo: JSONObject? = enterRes.optJSONObject("assignFamilyMemberInfo")//分配成员信息-顶梁柱
@@ -203,7 +208,11 @@ data object AntFarmFamily {
                 val animal = animals.getJSONObject(i)
                 val animalStatusVo = animal.getJSONObject("animalStatusVO")
                 if (AnimalInteractStatus.HOME.name == animalStatusVo.getString("animalInteractStatus") && AnimalFeedStatus.HUNGRY.name == animalStatusVo.getString("animalFeedStatus")) {
-                    val groupId = animal.getString("groupId")
+                    val groupId = animal.optString("groupId", "")
+                    if (groupId.isEmpty()) {
+                        Log.error(TAG, "Animal missing groupId, skipping: $animal")
+                        continue
+                    }
                     val farmId = animal.getString("farmId")
                     val userId = animal.getString("userId")
                     if (UserMap.getUserIdSet().contains(userId)) {

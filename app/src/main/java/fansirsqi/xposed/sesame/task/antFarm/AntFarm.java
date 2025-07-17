@@ -1078,8 +1078,12 @@ public class AntFarm extends ModelTask {
                 if (!Status.hasFlagToday(CACHED_FLAG)) {
                     JSONObject jo = new JSONObject(DadaDailyRpcCall.home(activityId));
                     if (ResChecker.checkRes(TAG, jo)) {
-                        JSONArray operationConfigList = jo.getJSONArray("operationConfigList");
-                        updateTomorrowAnswerCache(operationConfigList, tomorrow);
+                        JSONArray operationConfigList = jo.optJSONArray("operationConfigList");
+                        if (operationConfigList != null) {
+                            updateTomorrowAnswerCache(operationConfigList, tomorrow);
+                        } else {
+                            Log.error(TAG, "operationConfigList not found in home response: " + jo.toString());
+                        }
                         Status.setFlagToday(CACHED_FLAG);
                     }
                 }
@@ -1145,8 +1149,12 @@ public class AntFarm extends ModelTask {
                 JSONObject extInfo = joDailySubmit.getJSONObject("extInfo");
                 boolean correct = joDailySubmit.getBoolean("correct");
                 Log.farm("饲料任务答题：" + (correct ? "正确" : "错误") + "领取饲料［" + extInfo.getString("award") + "g］");
-                JSONArray operationConfigList = joDailySubmit.getJSONArray("operationConfigList");
-                updateTomorrowAnswerCache(operationConfigList, tomorrow);
+                JSONArray operationConfigList = joDailySubmit.optJSONArray("operationConfigList");
+                if (operationConfigList != null) {
+                    updateTomorrowAnswerCache(operationConfigList, tomorrow);
+                } else {
+                    Log.error(TAG, "operationConfigList not found in submit response: " + joDailySubmit.toString());
+                }
                 Status.setFlagToday(CACHED_FLAG);
             }
         } catch (Exception e) {
@@ -1162,6 +1170,10 @@ public class AntFarm extends ModelTask {
      */
     private void updateTomorrowAnswerCache(JSONArray operationConfigList, String date) {
         try {
+            if (operationConfigList == null) {
+                Log.error(TAG, "operationConfigList is null, cannot update cache");
+                return;
+            }
             Log.runtime(TAG, "updateTomorrowAnswerCache 开始更新缓存");
             Map<String, String> farmAnswerCache = DataCache.INSTANCE.getData(FARM_ANSWER_CACHE_KEY, new HashMap<>());
             if (farmAnswerCache == null) {
