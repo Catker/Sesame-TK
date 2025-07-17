@@ -659,8 +659,47 @@ public class ApplicationHook implements IXposedHookLoadPackage {
             }
             
             if (mainTask == null) {
-                Log.error(TAG, "mainTask is null, skipping execution");
-                return;
+                Log.error(TAG, "mainTask is null, attempting to recreate...");
+                // 尝试重新创建 mainTask
+                try {
+                    mainTask = BaseTask.newInstance("MAIN_TASK", () -> {
+                        try {
+                            if (!init) {
+                                Log.record(TAG, "️🐣跳过执行-未初始化");
+                                return;
+                            }
+                            if (!Config.isLoaded()) {
+                                Log.record(TAG, "️⚙跳过执行-用户模块配置未加载");
+                                return;
+                            }
+                            Log.record(TAG, "开始执行");
+                            long currentTime = System.currentTimeMillis();
+                            if (lastExecTime + 2000 > currentTime) {
+                                Log.record(TAG, "执行间隔较短，跳过执行");
+                                execDelayedHandler(BaseModel.getCheckInterval().getValue());
+                                return;
+                            }
+                            String currentUid = UserMap.getCurrentUid();
+                            String targetUid = getUserId();
+                            if (targetUid == null || !targetUid.equals(currentUid)) {
+                                Log.record(TAG, "用户切换或为空，重新登录");
+                                reLogin();
+                                return;
+                            }
+                            lastExecTime = currentTime; // 更新最后执行时间
+                            ModelTask.startAllTask(false);
+                            scheduleNextExecution(lastExecTime);
+                        } catch (Exception e) {
+                            Log.record(TAG, "❌执行异常");
+                            Log.printStackTrace(TAG, e);
+                        }
+                    });
+                    Log.runtime(TAG, "mainTask recreated successfully");
+                } catch (Exception e) {
+                    Log.error(TAG, "Failed to recreate mainTask: " + e.getMessage());
+                    Log.printStackTrace(TAG, e);
+                    return;
+                }
             }
             
             mainHandler.postDelayed(
