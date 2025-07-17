@@ -110,7 +110,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
         ApplicationHook.offline = offline;
     }
 
-    private volatile long lastExecTime = 0; // 添加为类成员变量
+    private static volatile long lastExecTime = 0; // 添加为类成员变量
 
     private XC_LoadPackage.LoadPackageParam modelLoadPackageParam;
 
@@ -129,7 +129,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
      *
      * @param lastExecTime 上次执行时间
      */
-    private void scheduleNextExecution(long lastExecTime) {
+    private static void scheduleNextExecution(long lastExecTime) {
         try {
             int checkInterval = BaseModel.getCheckInterval().getValue();
             List<String> execAtTimeList = BaseModel.getExecAtTimeList().getValue();
