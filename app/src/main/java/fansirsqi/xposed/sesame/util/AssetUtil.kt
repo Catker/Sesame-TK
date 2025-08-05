@@ -61,7 +61,7 @@ object AssetUtil {
      * 从应用安装目录复制so库到模块私有目录
      *
      * @param context 上下文
-     * @param soName  so库名称
+     * @param destFile  目标so库文件
      * @return 复制是否成功
      */
     fun copySoFileToStorage(context: Context, destFile: File): Boolean {
@@ -69,6 +69,7 @@ object AssetUtil {
             Files.ensureDir(File(destDir))
             val appInfo = context.applicationInfo
             val sourceDir = appInfo.nativeLibraryDir + File.separator + destFile.name
+//            Log.error(TAG, "Copying SO file from $sourceDir to ${destFile.absolutePath}")
             if (destFile.exists() && compareMD5(sourceDir, destFile.absolutePath)) {
                 Log.runtime(TAG, "SO file already exists: " + destFile.absolutePath)
                 return true
@@ -95,7 +96,12 @@ object AssetUtil {
         }
     }
 
-    //拷贝上面释放的文件到context 私有lib目录
+    /**
+     * 从模块私有目录复制so库到应用安装目录
+     * @param context 上下文
+     * @param sourceFile  源so库文件
+     * @return 复制是否成功
+     */
     fun copyDtorageSoFileToPrivateDir(context: Context, sourceFile: File): Boolean {
         try {
             if (!sourceFile.exists()) {

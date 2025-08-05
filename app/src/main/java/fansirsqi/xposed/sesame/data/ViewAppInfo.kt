@@ -2,13 +2,10 @@ package fansirsqi.xposed.sesame.data
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
-import android.content.pm.ApplicationInfo
-import android.os.Bundle
+import android.provider.Settings
 import fansirsqi.xposed.sesame.BuildConfig
 import fansirsqi.xposed.sesame.R
 import fansirsqi.xposed.sesame.util.Log
-import androidx.core.net.toUri
 
 @SuppressLint("StaticFieldLeak")
 object ViewAppInfo {
@@ -18,6 +15,11 @@ object ViewAppInfo {
     var appVersion: String = ""
     var appBuildTarget: String = ""
     var appBuildNumber: String = ""
+    var androidId: String = ""
+    var veriftag: Boolean = false
+
+    @SuppressLint("HardwareIds")
+
     val emojiList =
         listOf(
             "🍅", "🍓", "🥓", "🍂", "🍚", "🌰", "🟢", "🌴",
@@ -48,12 +50,14 @@ object ViewAppInfo {
      *
      * @param context 上下文对象，用于获取应用的资源信息
      */
+    @SuppressLint("HardwareIds")
     fun init(context: Context) {
         if (ViewAppInfo.context == null) {
             ViewAppInfo.context = context
             appBuildNumber = BuildConfig.VERSION_CODE.toString()
             appTitle = context.getString(R.string.app_name) //+ BuildConfig.VERSION_NAME
             appBuildTarget = BuildConfig.BUILD_DATE + " " + BuildConfig.BUILD_TIME + " ⏰"
+            androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
             try {
                 appVersion = "${BuildConfig.VERSION_NAME} " + emojiList.random()
             } catch (e: Exception) {

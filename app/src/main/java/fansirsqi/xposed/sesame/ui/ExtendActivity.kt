@@ -12,8 +12,9 @@ import fansirsqi.xposed.sesame.BuildConfig
 import fansirsqi.xposed.sesame.R
 import fansirsqi.xposed.sesame.data.DataCache
 import fansirsqi.xposed.sesame.entity.ExtendFunctionItem
+import fansirsqi.xposed.sesame.newui.WatermarkView
 import fansirsqi.xposed.sesame.ui.widget.ExtendFunctionAdapter
-import fansirsqi.xposed.sesame.util.Detector.getApiUrl
+import fansirsqi.xposed.sesame.util.Detector.getApi
 import fansirsqi.xposed.sesame.util.FansirsqiUtil
 import fansirsqi.xposed.sesame.util.Log
 import fansirsqi.xposed.sesame.util.ToastUtil
@@ -38,9 +39,9 @@ class ExtendActivity : BaseActivity() {
         setContentView(R.layout.activity_extend) // 设置布局文件
         debugTips = getString(R.string.debug_tips)
         baseTitle = getString(R.string.extended_func)
-
         setupRecyclerView()
         populateExtendFunctions()
+        WatermarkView.install(this)
     }
 
     private fun setupRecyclerView() {
@@ -150,7 +151,7 @@ class ExtendActivity : BaseActivity() {
                             val key = inputText.toIntOrNull(16)  // 支持输入 0x11 这样的十六进制
                             Log.debug(TAG, "获取BaseUrl key：$key")
                             if (key != null) {
-                                val output = getApiUrl(key)
+                                val output = getApi(key)
                                 ToastUtil.showToast(this, "$output \n输入内容: $inputText")
                             } else {
                                 ToastUtil.showToast(this, "输入内容: $inputText , 请输入正确的十六进制数字")

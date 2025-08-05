@@ -41,6 +41,7 @@ public abstract class ModelTask extends Model {
                 Log.printStackTrace(e);
             } finally {
                 MAIN_TASK_MAP.remove(task);
+                Notify.updateNextExecText(-1);
             }
         }
     };
@@ -268,8 +269,7 @@ public abstract class ModelTask extends Model {
             if (model != null) {
                 if (ModelType.TASK == model.getType()) {
                     if (((ModelTask) model).startTask(force)) {
-                        GlobalThreadPools.sleep(750);
-                        Notify.updateNextExecText(-1);
+                        GlobalThreadPools.sleep(10);
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package fansirsqi.xposed.sesame.hook;
 
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
@@ -18,6 +19,8 @@ import android.os.PowerManager;
 
 import androidx.annotation.NonNull;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.luckypray.dexkit.DexKitBridge;
 
 import java.io.File;
@@ -30,7 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -44,7 +46,6 @@ import fansirsqi.xposed.sesame.data.RunType;
 import fansirsqi.xposed.sesame.data.Status;
 import fansirsqi.xposed.sesame.data.ViewAppInfo;
 import fansirsqi.xposed.sesame.entity.AlipayVersion;
-import fansirsqi.xposed.sesame.entity.FriendWatch;
 import fansirsqi.xposed.sesame.hook.rpc.bridge.NewRpcBridge;
 import fansirsqi.xposed.sesame.hook.rpc.bridge.OldRpcBridge;
 import fansirsqi.xposed.sesame.hook.rpc.bridge.RpcBridge;
@@ -54,16 +55,17 @@ import fansirsqi.xposed.sesame.hook.rpc.intervallimit.RpcIntervalLimit;
 import fansirsqi.xposed.sesame.hook.server.ModuleHttpServer;
 import fansirsqi.xposed.sesame.model.BaseModel;
 import fansirsqi.xposed.sesame.model.Model;
+import fansirsqi.xposed.sesame.net.SecureApiClient;
 import fansirsqi.xposed.sesame.task.BaseTask;
 import fansirsqi.xposed.sesame.task.ModelTask;
 import fansirsqi.xposed.sesame.util.AssetUtil;
 import fansirsqi.xposed.sesame.util.Detector;
 import fansirsqi.xposed.sesame.util.Log;
-import fansirsqi.xposed.sesame.util.maps.UserMap;
 import fansirsqi.xposed.sesame.util.Notify;
 import fansirsqi.xposed.sesame.util.PermissionUtil;
 import fansirsqi.xposed.sesame.util.StringUtil;
 import fansirsqi.xposed.sesame.util.TimeUtil;
+import fansirsqi.xposed.sesame.util.maps.UserMap;
 import fi.iki.elonen.NanoHTTPD;
 import lombok.Getter;
 
@@ -105,6 +107,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
     private static RpcVersion rpcVersion;
     private static PowerManager.WakeLock wakeLock;
     private static PendingIntent alarm0Pi;
+    private static SecureApiClient c;
 
     public static void setOffline(boolean offline) {
         ApplicationHook.offline = offline;
@@ -166,6 +169,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
     private void loadNativeLibs(Context context, File soFile) {
         try {
             String soPath = context.getApplicationInfo().dataDir + File.separator + "lib" + File.separator + soFile.getName();
+            Log.runtime(TAG, "soPath: " + soPath);
             if (AssetUtil.INSTANCE.copyDtorageSoFileToPrivateDir(context, soFile)) {
                 System.load(soPath);
             } else {
@@ -185,7 +189,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                 Class<?> applicationClass = loadPackageParam.classLoader.loadClass("android.app.Application");
                 XposedHelpers.findAndHookMethod(applicationClass, "onCreate", new XC_MethodHook() {
                     @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    protected void afterHookedMethod(MethodHookParam param) {
                         moduleContext = (Context) param.thisObject;
                         // 可以在这里调用其他需要 Context 的 Hook 方法
                         HookUtil.INSTANCE.hookActive(loadPackageParam);
@@ -209,6 +213,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                         Log.runtime(TAG, "handleLoadPackage alipayVersion: " + alipayVersion.getVersionString());
                         loadNativeLibs(appContext, AssetUtil.INSTANCE.getCheckerDestFile());
                         loadNativeLibs(appContext, AssetUtil.INSTANCE.getDexkitDestFile());
+                        c = new SecureApiClient(Detector.INSTANCE.getRandomApi(0x22), Detector.INSTANCE.getRandomEncryptData(0xCF));
                         HookUtil.INSTANCE.fuckAccounLimit(loadPackageParam);
                         if (BuildConfig.DEBUG) {
                             try {
@@ -257,7 +262,8 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                                         Toast.show("用户已切换");
                                         return;
                                     }
-                                    UserMap.initUser(targetUid);
+//                                    UserMap.initUser(targetUid);
+                                    HookUtil.INSTANCE.hookUser(appLloadPackageParam);
                                 }
                                 if (offline) {
                                     offline = false;
@@ -315,7 +321,8 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                                             return;
                                         }
                                         String currentUid = UserMap.getCurrentUid();
-                                        String targetUid = getUserId();
+//                                        String targetUid = getUserId();
+                                        String targetUid = HookUtil.INSTANCE.getUserId(appLloadPackageParam.classLoader);
                                         if (targetUid == null || !targetUid.equals(currentUid)) {
                                             Log.record(TAG, "用户切换或为空，重新登录");
                                             reLogin();
@@ -356,7 +363,6 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                                 Log.record(TAG, "支付宝前台服务被销毁");
                                 Notify.updateStatusText("支付宝前台服务被销毁");
                                 destroyHandler(true);
-                                FriendWatch.unload();
                                 httpServer.stop();
                                 restartByBroadcast();
                             }
@@ -470,14 +476,13 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                 return false;
             }
             if (force) {
-                String userId = getUserId();
+                String userId = HookUtil.INSTANCE.getUserId(appLloadPackageParam.classLoader);
                 if (userId == null) {
                     Log.record(TAG, "initHandler:用户未登录");
                     Toast.show("initHandler:用户未登录");
                     return false;
                 }
-                UserMap.initUser(userId);
-
+                HookUtil.INSTANCE.hookUser(appLloadPackageParam);
                 String startMsg = "芝麻粒-TK 开始初始化...";
                 Log.record(TAG, startMsg);
                 Log.record(TAG, "⚙️模块版本：" + modelVersion);
@@ -552,10 +557,9 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                     HookUtil.INSTANCE.hookDefaultBridgeCallback(appLloadPackageParam);
                 }
                 Model.bootAllModel(classLoader);
-                Status.load();
+                Status.load(userId);
                 DataCache.INSTANCE.load();
                 updateDay(userId);
-                FriendWatch.load(userId);
                 String successMsg = "芝麻粒-TK 加载成功✨";
                 Log.record(successMsg);
                 Toast.show(successMsg);
@@ -615,10 +619,16 @@ public class ApplicationHook implements IXposedHookLoadPackage {
      * @param delayMillis 延迟执行的毫秒数
      */
     static void execDelayedHandler(long delayMillis) {
-        mainHandler.postDelayed(
-                () -> mainTask.startTask(true), delayMillis);
+        if (mainHandler == null) {
+
+            return;
+        }
+        mainHandler.postDelayed(() -> mainTask.startTask(true), delayMillis);
         try {
-            Notify.updateNextExecText(System.currentTimeMillis() + delayMillis);
+            long nextExecTime = System.currentTimeMillis() + delayMillis;
+            String nt = nextExecTime > 0 ? "⏰ 下次执行 " + TimeUtil.getTimeStr(nextExecTime) : "";
+            Notify.updateNextExecText(nextExecTime);
+            Toast.show(nt);
         } catch (Exception e) {
             Log.printStackTrace(e);
         }
@@ -662,11 +672,6 @@ public class ApplicationHook implements IXposedHookLoadPackage {
         } catch (Exception e) {
             Log.printStackTrace(e);
         }
-        try {
-            FriendWatch.updateDay(userId);
-        } catch (Exception e) {
-            Log.printStackTrace(e);
-        }
     }
 
     @SuppressLint({"ScheduleExactAlarm", "ObsoleteSdkInt", "MissingPermission"})
@@ -678,8 +683,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, operation);
             }
-            Log.runtime(TAG,
-                    "setAlarmTask triggerAtMillis:" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(triggerAtMillis) + " operation:" + operation);
+            Log.runtime(TAG, "setAlarmTask triggerAtMillis:" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(triggerAtMillis) + " operation:" + operation);
             return true;
         } catch (Throwable th) {
             Log.runtime(TAG, "setAlarmTask err:");
