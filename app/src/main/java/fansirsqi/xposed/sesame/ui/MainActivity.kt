@@ -26,7 +26,7 @@ import fansirsqi.xposed.sesame.data.General
 import fansirsqi.xposed.sesame.data.RunType
 import fansirsqi.xposed.sesame.data.UIConfig
 import fansirsqi.xposed.sesame.data.ViewAppInfo
-import fansirsqi.xposed.sesame.data.ViewAppInfo.androidId
+import fansirsqi.xposed.sesame.data.ViewAppInfo.verifyId
 import fansirsqi.xposed.sesame.entity.UserEntity
 import fansirsqi.xposed.sesame.net.SecureApiClient
 import fansirsqi.xposed.sesame.newui.WatermarkView
@@ -81,7 +81,7 @@ class MainActivity : BaseActivity() {
                 primary = Color(0xFF3F51B5), onPrimary = Color.White, background = Color(0xFFF5F5F5), onBackground = Color.Black
             )
             MaterialTheme(colorScheme = customColorScheme) {
-                DeviceInfoCard(DeviceInfoUtil.getDeviceInfo(this@MainActivity))
+                DeviceInfoCard(DeviceInfoUtil.showInfo(verifyId))
             }
         }
         // 获取并设置一言句子
@@ -105,7 +105,7 @@ class MainActivity : BaseActivity() {
         c = SecureApiClient(baseUrl = getRandomApi(0x22), signatureKey = getRandomEncryptData(0xCF))
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                c.secureVerify(deviceId = androidId, path = getRandomEncryptData(0x9e))
+                c.secureVerify(deviceId = verifyId, path = getRandomEncryptData(0x9e))
             }
             Log.runtime("verify result = $result")
             ToastUtil.makeText("${result?.optString("message")}", Toast.LENGTH_SHORT).show()
@@ -398,7 +398,6 @@ class MainActivity : BaseActivity() {
     }
 
     fun updateSubTitle(runType: String) {
-        Log.runtime(TAG, "updateSubTitle$runType")
         baseTitle = ViewAppInfo.appTitle + "[" + runType + "]"
         when (runType) {
             RunType.DISABLE.nickName -> setBaseTitleTextColor(

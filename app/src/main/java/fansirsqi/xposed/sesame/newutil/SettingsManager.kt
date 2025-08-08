@@ -12,7 +12,10 @@ object MMKVSettingsManager {
 
     fun init(context: Context) {
         MMKV.initialize(context)
-        mmkv = MMKV.mmkvWithID("sesame-tk", MMKV.MULTI_PROCESS_MODE)
+        mmkv = MMKV.mmkvWithID(
+            "sesame-tk", // 唯一标识符
+            MMKV.MULTI_PROCESS_MODE  //多进程访问
+        )
     }
 
     fun ensureInit() {

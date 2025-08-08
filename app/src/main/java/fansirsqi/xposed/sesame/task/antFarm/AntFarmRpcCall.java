@@ -189,14 +189,13 @@ public class AntFarmRpcCall {
     }
 
     public static String feedAnimal(String farmId) throws JSONException {
-//        [{"animalType":"CHICK","canMock":true,"farmId":"xxxxxxxxxx","requestType":"NORMAL","sceneCode":"ANTFARM","source":"chInfo_ch_appcenter__chsub_9patch","version":"1.8.2302070202.46"}]
         JSONObject args = new JSONObject();
         args.put("animalType", "CHICK");
         args.put("canMock", true);
         args.put("farmId", farmId);
         args.put("requestType", "NORMAL");
         args.put("sceneCode", "ANTFARM");
-        args.put("source", "chInfo_ch_appcenter__chsub_9patch");
+        args.put("source", "chInfo_ch_appcollect__chsub_my-recentlyUsed");
         args.put("version", VERSION);
         String params = "[" + args + "]";
         return RequestManager.requestString("com.alipay.antfarm.feedAnimal", params);
@@ -229,7 +228,6 @@ public class AntFarmRpcCall {
     }
 
     public static String feedFriendAnimal(String friendFarmId) throws JSONException {
-//        [{"friendFarmId":"10171020124112012088822393935729","requestType":"NORMAL","sceneCode":"ANTFARM","source":"chInfo_ch_appcenter__chsub_9patch","version":"1.8.2302070202.46"}]
         JSONObject args = new JSONObject();
         args.put("friendFarmId", friendFarmId);
         args.put("requestType", "NORMAL");

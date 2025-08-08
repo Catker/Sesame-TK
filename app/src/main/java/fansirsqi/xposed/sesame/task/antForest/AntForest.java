@@ -884,11 +884,11 @@ public class AntForest extends ModelTask {
             String userName, bizType;
             if (!fromTag.equals("pk")) {
                 userName = UserMap.getMaskName(userId);
-                bizType = "";
             } else {
                 userName = "PK榜好友" + userHomeObj.getJSONObject("userEnergy").getString("displayName");
-                bizType = "GREEN";
+
             }
+            bizType = "GREEN";
             if (cacheCollectedMap.containsKey(userId)) {
                 Log.runtime(TAG, userName + "已缓存，跳过");
                 return userHomeObj;
@@ -1099,9 +1099,9 @@ public class AntForest extends ModelTask {
             if (errorWait) return;
             String jsonStr;
             if (flag.equals("pk")) {
-                jsonStr = AntForestRpcCall.fillUserRobFlag(new JSONArray(userIds).toString(), true);
+                jsonStr = AntForestRpcCall.fillUserRobFlag(new JSONArray(userIds), true);
             } else {
-                jsonStr = AntForestRpcCall.fillUserRobFlag(new JSONArray(userIds).toString());
+                jsonStr = AntForestRpcCall.fillUserRobFlag(new JSONArray(userIds));
             }
             JSONObject batchObj = new JSONObject(jsonStr);
             JSONArray friendList = batchObj.optJSONArray("friendRanking");
@@ -1126,9 +1126,26 @@ public class AntForest extends ModelTask {
     private void processEnergy(JSONObject obj, String flag) {
         try {
             if (errorWait) return;
-            if (!flag.equals("pk")) {
-                String userId = obj.getString("userId");
-                String userName = UserMap.getMaskName(userId);
+            String userId = obj.getString("userId");
+            if (flag.equals("pk")) {
+                if (Objects.equals(userId, selfId)) return;//如果是自己，则跳过
+                boolean needCollectEnergy = collectEnergy.getValue() && pkEnergy.getValue();
+                boolean canCollect = false;
+                if (!needCollectEnergy) {
+                    return;
+                } else {
+                    if (obj.optBoolean("canCollectEnergy")) {
+                        long canCollectLaterTime = obj.getLong("canCollectLaterTime");
+                        if (canCollectLaterTime > 0 && canCollectLaterTime - System.currentTimeMillis() < checkIntervalInt) {//如果收取时间在执行时间范围内，则可以收取
+                            canCollect = true;
+                        }
+                    }
+                }
+                // 开始执行收集能量
+                if (canCollect) {
+                    collectEnergy(userId, queryFriendHome(userId, "PKContest"), "pk");
+                }
+            } else {
                 if (Objects.equals(userId, selfId)) return;//如果是自己，则跳过
                 boolean needCollectEnergy = collectEnergy.getValue() && !dontCollectMap.contains(userId); //开启了收能量功能并且不在排除名单中
                 boolean needHelpProtect = helpFriendCollectType.getValue() != HelpFriendCollectType.NONE && obj.optBoolean("canProtectBubble") && Status.hasFlagToday("help_friend_collect_protect::" + selfId);
@@ -1146,13 +1163,11 @@ public class AntForest extends ModelTask {
                         }
                     }
                 }
-
                 JSONObject userHomeObj = null;
                 // 开始执行收集能量
                 if (needCollectEnergy && canCollect) {
                     userHomeObj = collectEnergy(userId, queryFriendHome(userId, null), "friend");
                 }
-
                 if (needHelpProtect) {
                     boolean isProtected = helpFriendCollectList.getValue().contains(userId);
                     if (helpFriendCollectType.getValue() != HelpFriendCollectType.HELP) {
@@ -1167,7 +1182,6 @@ public class AntForest extends ModelTask {
                         }
                     }
                 }
-
                 // 尝试领取礼物盒
                 if (needCollectGiftBox) {
                     if (userHomeObj == null) {
@@ -1176,26 +1190,6 @@ public class AntForest extends ModelTask {
                     if (userHomeObj != null) {
                         collectGiftBox(userHomeObj);
                     }
-                }
-            } else {
-                String userId = obj.getString("userId");
-                String userName = obj.getString("displayName");
-                if (Objects.equals(userId, selfId)) return;//如果是自己，则跳过
-                boolean needCollectEnergy = collectEnergy.getValue() && pkEnergy.getValue();
-                boolean canCollect = false;
-                if (!needCollectEnergy) {
-                    return;
-                } else {
-                    if (obj.optBoolean("canCollectEnergy")) {
-                        long canCollectLaterTime = obj.getLong("canCollectLaterTime");
-                        if (canCollectLaterTime > 0 && canCollectLaterTime - System.currentTimeMillis() < checkIntervalInt) {//如果收取时间在执行时间范围内，则可以收取
-                            canCollect = true;
-                        }
-                    }
-                }
-                // 开始执行收集能量
-                if (canCollect) {
-                    collectEnergy(userId, queryFriendHome(userId, "PKContest"), "pk");
                 }
             }
         } catch (JSONException e) {
