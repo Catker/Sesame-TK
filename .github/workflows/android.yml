@@ -2,9 +2,9 @@ name: Android CI
 
 on:
   push:
-    branches: ["n"]
+    branches: ["main"]
   pull_request:
-    branches: ["n"]
+    branches: ["main"]
   release:
     types: [published]
   workflow_dispatch:
