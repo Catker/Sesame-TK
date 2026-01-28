@@ -51,7 +51,7 @@ public class ResChecker {
                 }
             }
             // 特殊的 resultCode 检查
-            if ("I07".equals(resultCode)) {
+            if ("I07".equals(resultCode) || "ILLEGAL_ARGUMENT".equals(resultCode) || "I09".equals(resultCode)) {
                 return false; // 返回false，但不打印错误日志
             }
             // 获取调用栈信息以确定错误来源

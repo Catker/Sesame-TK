@@ -134,7 +134,7 @@ jobs:
           x86_file=$(basename "${{ steps.extract_apks.outputs.signed_x86 }}")
           x86_64_file=$(basename "${{ steps.extract_apks.outputs.signed_x86_64 }}")
           universal_file=$(basename "${{ steps.extract_apks.outputs.signed_universal }}")
-          version=$(echo "$arm64_file" | sed -E 's/.*-(arm64-v8a)-(v[^-]+).*-signed\.apk/\2/')
+          version="${{ github.ref_name }}"
           echo "arm64_file=$arm64_file" >> $GITHUB_OUTPUT
           echo "armv7_file=$armv7_file" >> $GITHUB_OUTPUT
           echo "x86_file=$x86_file" >> $GITHUB_OUTPUT
@@ -149,14 +149,6 @@ jobs:
           sha256sum ${{ steps.extract_apks.outputs.signed_x86 }} > CHECKSUMS-Sesame-x86-${{ steps.extract_info.outputs.version }}.apk.sha256
           sha256sum ${{ steps.extract_apks.outputs.signed_x86_64 }} > CHECKSUMS-Sesame-x86_64-${{ steps.extract_info.outputs.version }}.apk.sha256
           sha256sum ${{ steps.extract_apks.outputs.signed_universal }} > CHECKSUMS-Sesame-universal-${{ steps.extract_info.outputs.version }}.apk.sha256
-
-      - name: ✨ Create Tag from Version
-        if: startsWith(github.ref, 'refs/heads/n') && github.event_name == 'push'
-        run: |
-          VERSION_TAG="${{ steps.extract_info.outputs.version }}"
-          echo "Creating tag: $VERSION_TAG"
-          git tag "$VERSION_TAG"
-          git push origin "$VERSION_TAG"
 
       - name: 📝 Generate Dynamic Message
         id: commit_info
@@ -201,74 +193,6 @@ jobs:
           # 清理临时文件
           rm "$MESSAGE_FILE"
 
-
-
-      - name: 📮 Post to Telegram channel
-        if: github.ref == 'refs/heads/n'
-        env:
-          CHANNEL_ID: ${{ secrets.TG_CHAT_ID }}
-          BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          VERSION: ${{ steps.extract_info.outputs.version }}
-          REPO_SLUG: ${{ github.repository }}
-          COMMIT_MSG: ${{ steps.commit_info.outputs.message_string }}
-          ACTOR: ${{ github.actor }}
-          # 构造 Release 页面的链接
-          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.extract_info.outputs.version }}
-        run: |
-          python3 -c '
-          import os, json, requests
-
-          bot_token = os.environ["TG_BOT_TOKEN"]
-          channel_id = os.environ["TG_CHAT_ID"]
-          group_id = os.environ["GROUP_ID"]
-          version = os.environ["VERSION"]
-          release_url = os.environ["RELEASE_URL"]
-          commit_msg = os.environ["COMMIT_MSG"]
-          actor = os.environ["ACTOR"]
-          text = f"<b>🎉 New Version {version} Published! </b>\n"
-          text += f"Target by <b>{actor}</b>\n"
-          text += f"<i>✨ What\'s Changed:</i>\n<pre>{commit_msg}</pre>\n"
-          text += f"⚠️ <b>请点击下方按钮前往 Release 页面下载对应的版本。</b>"
-          channel_payload = {
-              "chat_id": channel_id,
-              "parse_mode": "HTML",
-              "text": text,
-              "disable_web_page_preview": True,
-              "reply_markup": {
-                  "inline_keyboard": [[
-                      {
-                          "text": "📥 Download / 下载",
-                          "url": release_url
-                      }
-                  ]]
-              }
-          }
-          
-          group_payload = {
-              "chat_id": group_id,
-              "message_thread_id":"74042",
-              "parse_mode": "HTML",
-              "text": text,
-              "disable_web_page_preview": True,
-              "reply_markup": {
-                  "inline_keyboard": [[
-                      {
-                          "text": "📥 Download / 下载",
-                          "url": release_url
-                      }
-                  ]]
-              }
-          }
-          
-          push_list=[channel_payload, group_payload]
-          
-          for payload in push_list:
-              resp = requests.post(f"https://api.telegram.org/bot{bot_token}/sendMessage", json=payload)
-              print(resp.text)
-              if resp.status_code != 200:
-                continue
-          '
-
       - name: 🚀 Upload Assets to Source Release
         if: github.event_name == 'release' && github.event.action == 'published'
         uses: softprops/action-gh-release@v2
@@ -289,12 +213,18 @@ jobs:
           draft: false
           append_body: true
           make_latest: true
-          generate_release_notes: true
+          generate_release_notes: false
           body: |
-            ## ✨What's Changed
-
-            ${{ steps.commit_info.outputs.message_string }}
-
+            
+            > [!Important]
+            >
+            > ## 模块的蓬勃生机离不开社区与群组,感谢各位的贡献🎉
+  
+            > [!NOTE]
+            > 你可以尝试点击下方图标加入我们的组织
+  
+            [![Telegram-Channel](https://img.shields.io/badge/Sesame--TK-nul?&logo=Telegram&label=Telegram-Channel&labelColor=fff&link=https%3A%2F%2Ft.me%2FSesame_TK_Channel)](https://t.me/Sesame_TK_Channel)   [![Telegram-Group](https://img.shields.io/badge/Sesame--TK-nul?&logo=Telegram&label=Telegram-Group&labelColor=fff&link=https%3A%2F%2Ft.me%2Ffansirsqi_xposed_sesame)](https://t.me/fansirsqi_xposed_sesame)   [![Static Badge](https://img.shields.io/badge/QQ--Channel-nul?style=flat&logo=qq&labelColor=%23fff&logoSize=12&label=%E8%85%BE%E8%AE%AF%E9%A2%91%E9%81%93&link=https%3A%2F%2Fpd.qq.com%2Fs%2Fhdvws4vuf)](https://pd.qq.com/s/hdvws4vuf)   [![Static Badge](https://img.shields.io/badge/QQ--Group-nul?style=flat&logo=qq&logoSize=12&label=QQ%E7%BE%A4%E8%81%8A&labelColor=%23fff&link=https%3A%2F%2Fqm.qq.com%2Fq%2FAj0Xby6AGQ)](https://qm.qq.com/q/Aj0Xby6AGQ)
+  
             > ## 下载说明
             <b>- arm64-v8a:</b> 适用于64位ARM设备 (主流新手机)
             <b>- armeabi-v7a:</b> 适用于32位ARM设备 (旧款手机)
@@ -322,13 +252,11 @@ jobs:
           token: ${{ secrets.TARGET_REPO_PAT }}
           tag_name: ${{ steps.extract_info.outputs.version}}
           draft: false
-          append_body: true
           make_latest: true
           body: |
-            📦 内容同步自源仓库 [Sesame-TK](https://github.com/${{ github.repository }})     
-            ## ✨What's Changed
+            📦 内容同步自源仓库 [Sesame-TK](https://github.com/${{ github.repository }})
             
-            ${{ steps.commit_info.outputs.message_string }}
+            ${{ github.event.release.body }}
             
             > ## 下载说明
             <b>- arm64-v8a:</b> 适用于64位ARM设备 (主流新手机)

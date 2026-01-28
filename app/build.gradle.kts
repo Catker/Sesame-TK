@@ -48,22 +48,11 @@ android {
             timeZone = TimeZone.getTimeZone("GMT+8")
         }.format(Date())
 
-        val buildTargetCode = try {
-            buildDate.replace("-", ".") + "." + buildTime.replace(":", ".")
-        } catch (_: Exception) {
-            "0000"
-        }
-
         versionCode = gitCommitCount
-        val buildTag = "beta"
-        versionName = "v0.3.0.rc$gitCommitCount-$buildTag"
+        versionName = "0.9.9"
 
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
         buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
-        buildConfigField("String", "BUILD_NUMBER", "\"$buildTargetCode\"")
-        buildConfigField("String", "BUILD_TAG", "\"$buildTag\"")
-        buildConfigField("String", "VERSION", "\"$versionName\"")
-
         if (isCIBuild) {
             ndk {
                 abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
@@ -80,8 +69,10 @@ android {
 
 
     buildFeatures {
+        viewBinding = true
         buildConfig = true
         compose = true
+        aidl = true
     }
 
     compileOptions {
@@ -150,16 +141,22 @@ dependencies {
     implementation(libs.rikka.shizuku.api)        // Shizuku API
     implementation(libs.rikka.shizuku.provider)   // Shizuku 提供者
     implementation(libs.rikka.refine)             // Rikka 反射工具
-    implementation(libs.ui.tooling.preview.android)
+//    implementation(libs.rikka.hidden.stub)
+    // implementation(libs.ui.tooling.preview.android)
+    implementation(libs.cmd.android)
+    implementation(libs.androidx.ui.text.google.fonts)
+    implementation(libs.material3) // 用于通过 Shizuku 执行命令
 
     // Compose 相关依赖 - 现代化 UI 框架
     val composeBom = platform("androidx.compose:compose-bom:2025.12.00")  // Compose BOM 版本管理
     implementation(composeBom)
+
     testImplementation(composeBom)
     androidTestImplementation(composeBom)
     implementation(libs.androidx.material3)                // Material 3 设计组件
     implementation(libs.androidx.ui.tooling.preview)              // UI 工具预览
     debugImplementation(libs.androidx.ui.tooling)                 // 调试时的 UI 工具
+    implementation(libs.androidx.material.icons.extended)         // Material 3 图标
 
     // 生命周期和数据绑定
     implementation(libs.androidx.lifecycle.viewmodel.compose) // Compose ViewModel 支持
