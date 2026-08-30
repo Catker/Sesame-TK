@@ -1,5 +1,13 @@
 ![Sesame-TK](https://socialify.git.ci/Fansirsqi/Sesame-TK/image?custom_description=%E8%8A%9D%E4%BD%A0%E9%BA%BB%E5%92%B8%E9%B1%BC%E7%9A%84%E7%B2%92-TK&description=1&font=Source+Code+Pro&forks=1&issues=1&language=1&owner=1&pulls=1&stargazers=1)
 
+
+> [!Important]
+> 感谢你一如既往的坚持
+>
+> 现在欢迎去往 [Sen](https://github.com/SenOffical/SenPublic) ✨，我们将逐步开放更多名额~，出于项目性质，请勿大肆宣传
+
+
+
 > [!NOTE] 
 值得庆幸的是我们即将回归，项目不再全部开源，并且更名为Sen为了防止无尽的被借鉴抄袭，我们引入了更严格的一对一风控，如果你将你获得的软件包散播，那么你和被散播的用户都将失去运行模块的权利，所以作为分享者，你需要考量，作为被分享者，请确保从官方渠道取得安装包~ 
 期间发生了很多操蛋的事情，我们起初创建了一个用于内测的群组，并且说明人数到达100我们就将链接私密，但是被一些别有用心的人利用，当我们内测群组私密链接后假冒我们，转发我们的消息~，源链接就像曾经的TK频道一样被污染（没错，他被人注册成了91xxx，你可以在曾经的TK中，通过支持链接到已被污染的频道
@@ -7,16 +15,15 @@
 
 如果你还对我们抱有信心，欢迎加入我们的新频道 ，当然，全新的频道与群组会有更严厉的风控，在频道中你可以通过爬楼了解上述事情的始末与来龙去脉~，懒得跟傻逼互喷了
 
-https://t.me/Sesame_TK_Channel ❌源频道已被污染
-
-https://t.me/fansirsqi_xposed_sesame ❌源群组已被污染
-
-https://t.me/forest_xposed ❌假冒者
-
-https://t.me/ForestXposed_Channel ✅源TK频道，源群组已挂被举报阵亡 (欢迎订阅
-
-https://t.me/byseven_sen ✅转生Sen频道 (欢迎订阅
-
+| 状态 | 链接 |
+|------|------|
+| ❌ 源频道已被污染 | https://t.me/Sesame_TK_Channel |
+| ❌ 源群组已被污染 | https://t.me/fansirsqi_xposed_sesame |
+| ❌ 假冒者 | https://t.me/forest_xposed |
+| ❌ 不知道哪来的骗子改我以前的名字开频道，注意被骗 | https://t.me/fansirsqi |
+| ❌ 同上，应该是同一人 | https://t.me/BysevenOffical |
+| ✅ 官方 Forest 频道（欢迎订阅） | https://t.me/ForestXposed_Channel |
+| ✅ 转生 Sen 频道（欢迎订阅） | https://t.me/byseven_sen |
 
 ---
 
